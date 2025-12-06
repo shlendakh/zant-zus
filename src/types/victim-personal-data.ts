@@ -1,5 +1,6 @@
 import type { Address } from './address';
 import type { CorrespondenceAddress } from './address';
+import type { ContactInfo } from './address';
 import type { IdentityDocument } from './identity-document';
 
 export interface VictimPersonalData {
@@ -13,5 +14,7 @@ export interface VictimPersonalData {
   placeOfBirth: string;
   lastResidenceAddress?: Address;
   correspondenceAddress?: CorrespondenceAddress;
+  businessAddress?: ContactInfo;
+  childcareAddress?: ContactInfo;
 }
 

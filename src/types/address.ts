@@ -31,4 +31,9 @@ export interface CorrespondenceAddress {
   boxNumber?: string; // Numer skrytki/przegródki
 }
 
+export interface ContactInfo {
+  address: Address;
+  phoneNumber?: string;
+}
+
 
