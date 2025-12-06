@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -37,8 +37,10 @@ import {
 import { cn } from "@/lib/utils"
 import type { VictimPersonalData } from "@/types/victim-personal-data"
 import { IdentityDocumentType, type IdentityDocumentType as IdentityDocumentTypeType } from "@/types/identity-document"
+import { CorrespondenceAddressType, type CorrespondenceAddress } from "@/types/address"
+import { Checkbox } from "@/components/ui/checkbox"
 
-const formSchema = z.object({
+const createFormSchema = (hasDifferentCorrespondenceAddress: boolean) => z.object({
   pesel: z
     .string()
     .min(1, "PESEL jest wymagany")
@@ -175,9 +177,116 @@ const formSchema = z.object({
         })
       }
     }),
+  correspondenceAddress: z
+    .object({
+      type: z.string().optional(),
+      // Dla typu "address"
+      street: z.string().optional(),
+      houseNumber: z.string().optional(),
+      apartmentNumber: z.string().optional(),
+      postalCode: z.string().optional(),
+      city: z.string().optional(),
+      // Dla typów "poste_restante", "post_office_box", "compartment_box"
+      postOfficePostalCode: z.string().optional(),
+      postOfficeName: z.string().optional(),
+      // Dla typów "post_office_box", "compartment_box"
+      boxNumber: z.string().optional(),
+    })
+    .optional()
+    .superRefine((data, ctx) => {
+      // Waliduj tylko jeśli checkbox jest zaznaczony
+      if (!hasDifferentCorrespondenceAddress) return
+
+      // Jeśli obiekt nie istnieje, nie waliduj
+      if (!data) return
+
+      // Sprawdź czy typ jest wybrany
+      if (!data.type || data.type.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Typ adresu jest wymagany",
+          path: ["type"],
+        })
+        return
+      }
+
+      const type = data.type as CorrespondenceAddressType
+
+      // Walidacja w zależności od typu
+      if (type === CorrespondenceAddressType.Address) {
+        // Dla typu "address" - wymagane pola: street, houseNumber, postalCode, city
+        if (!data.street || !data.street.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Ulica jest wymagana",
+            path: ["street"],
+          })
+        }
+        if (!data.houseNumber || !data.houseNumber.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Nr domu jest wymagany",
+            path: ["houseNumber"],
+          })
+        }
+        if (!data.postalCode || !data.postalCode.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Kod pocztowy jest wymagany",
+            path: ["postalCode"],
+          })
+        }
+        if (!data.city || !data.city.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Miejscowość jest wymagana",
+            path: ["city"],
+          })
+        }
+      } else if (type === CorrespondenceAddressType.PosteRestante) {
+        // Dla typu "poste_restante" - wymagane pola: postOfficePostalCode, postOfficeName
+        if (!data.postOfficePostalCode || !data.postOfficePostalCode.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Kod pocztowy placówki jest wymagany",
+            path: ["postOfficePostalCode"],
+          })
+        }
+        if (!data.postOfficeName || !data.postOfficeName.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Nazwa placówki jest wymagana",
+            path: ["postOfficeName"],
+          })
+        }
+      } else if (type === CorrespondenceAddressType.PostOfficeBox || type === CorrespondenceAddressType.CompartmentBox) {
+        // Dla typów "post_office_box" i "compartment_box" - wymagane pola: boxNumber, postOfficePostalCode, postOfficeName
+        if (!data.boxNumber || !data.boxNumber.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Numer skrytki/przegródki jest wymagany",
+            path: ["boxNumber"],
+          })
+        }
+        if (!data.postOfficePostalCode || !data.postOfficePostalCode.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Kod pocztowy placówki jest wymagany",
+            path: ["postOfficePostalCode"],
+          })
+        }
+        if (!data.postOfficeName || !data.postOfficeName.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Nazwa placówki jest wymagana",
+            path: ["postOfficeName"],
+          })
+        }
+      }
+    }),
 })
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>
 
 interface VictimPersonalDataFormProps {
   onSubmit: (data: VictimPersonalData) => void
@@ -225,6 +334,12 @@ export function VictimPersonalDataForm({
   defaultValues,
 }: VictimPersonalDataFormProps) {
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [hasDifferentCorrespondenceAddress, setHasDifferentCorrespondenceAddress] = useState(
+    !!defaultValues?.correspondenceAddress
+  )
+  
+  const formSchema = useMemo(() => createFormSchema(hasDifferentCorrespondenceAddress), [hasDifferentCorrespondenceAddress])
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -253,8 +368,28 @@ export function VictimPersonalDataForm({
         postalCode: "",
         city: "",
       },
+      correspondenceAddress: defaultValues?.correspondenceAddress || {
+        type: "",
+        street: "",
+        houseNumber: "",
+        apartmentNumber: "",
+        postalCode: "",
+        city: "",
+        postOfficePostalCode: "",
+        postOfficeName: "",
+        boxNumber: "",
+      },
     },
   })
+
+  // Aktualizuj walidację, gdy schemat się zmienia
+  useEffect(() => {
+    // Wyczyść błędy i wyzwól ponowną walidację
+    form.clearErrors("correspondenceAddress")
+    if (hasDifferentCorrespondenceAddress) {
+      form.trigger("correspondenceAddress")
+    }
+  }, [hasDifferentCorrespondenceAddress, formSchema, form])
 
   function handleSubmit(values: FormValues) {
     const data: VictimPersonalData = {
@@ -295,6 +430,34 @@ export function VictimPersonalDataForm({
             apartmentNumber: values.lastResidenceAddress.apartmentNumber,
           }),
         },
+      }),
+      ...(hasDifferentCorrespondenceAddress && values.correspondenceAddress && values.correspondenceAddress.type && {
+        correspondenceAddress: (() => {
+          const type = values.correspondenceAddress.type as CorrespondenceAddressType
+          const base: CorrespondenceAddress = {
+            type,
+          }
+
+          if (type === CorrespondenceAddressType.Address) {
+            // Dla typu "address" - standardowe pola adresowe
+            if (values.correspondenceAddress.street) base.street = values.correspondenceAddress.street
+            if (values.correspondenceAddress.houseNumber) base.houseNumber = values.correspondenceAddress.houseNumber
+            if (values.correspondenceAddress.apartmentNumber) base.apartmentNumber = values.correspondenceAddress.apartmentNumber
+            if (values.correspondenceAddress.postalCode) base.postalCode = values.correspondenceAddress.postalCode
+            if (values.correspondenceAddress.city) base.city = values.correspondenceAddress.city
+          } else if (type === CorrespondenceAddressType.PosteRestante) {
+            // Dla typu "poste_restante" - kod pocztowy i nazwa placówki
+            if (values.correspondenceAddress.postOfficePostalCode) base.postOfficePostalCode = values.correspondenceAddress.postOfficePostalCode
+            if (values.correspondenceAddress.postOfficeName) base.postOfficeName = values.correspondenceAddress.postOfficeName
+          } else if (type === CorrespondenceAddressType.PostOfficeBox || type === CorrespondenceAddressType.CompartmentBox) {
+            // Dla typów "post_office_box" i "compartment_box" - numer skrytki/przegródki, kod pocztowy i nazwa placówki
+            if (values.correspondenceAddress.boxNumber) base.boxNumber = values.correspondenceAddress.boxNumber
+            if (values.correspondenceAddress.postOfficePostalCode) base.postOfficePostalCode = values.correspondenceAddress.postOfficePostalCode
+            if (values.correspondenceAddress.postOfficeName) base.postOfficeName = values.correspondenceAddress.postOfficeName
+          }
+
+          return base
+        })(),
       }),
     }
     onSubmit(data)
@@ -789,6 +952,285 @@ export function VictimPersonalDataForm({
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Adres do korespondencji osoby poszkodowanej</h3>
+                  <div className="flex flex-row items-start space-x-3 space-y-0 mt-2">
+                    <Checkbox
+                      checked={hasDifferentCorrespondenceAddress}
+                      onCheckedChange={(checked) => {
+                        setHasDifferentCorrespondenceAddress(checked === true)
+                      }}
+                    />
+                    <div className="space-y-1 leading-none">
+                      <label
+                        htmlFor="correspondence-address-checkbox"
+                        className="text-sm font-medium leading-none cursor-pointer"
+                        onClick={() => {
+                          setHasDifferentCorrespondenceAddress(!hasDifferentCorrespondenceAddress)
+                        }}
+                      >
+                        Adres do korespondencji inny niż adres zamieszkania / pobytu
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                {hasDifferentCorrespondenceAddress && (
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control as any}
+                      name="correspondenceAddress.type"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:w-[calc(50%-12px)]">
+                          <FormLabel>Typ adresu</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Wybierz typ" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={CorrespondenceAddressType.Address}>adres</SelectItem>
+                              <SelectItem value={CorrespondenceAddressType.PosteRestante}>poste restante</SelectItem>
+                              <SelectItem value={CorrespondenceAddressType.PostOfficeBox}>skrytka pocztowa</SelectItem>
+                              <SelectItem value={CorrespondenceAddressType.CompartmentBox}>przegródka pocztowa</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Pola dla typu "adres" */}
+                    {form.watch("correspondenceAddress.type") === CorrespondenceAddressType.Address && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.street"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-[2]">
+                                <FormLabel>Ulica</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="ul. Przykładowa" className="w-full" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.houseNumber"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Nr domu</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="12" 
+                                    className="w-full" 
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatDigitsOnly(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.apartmentNumber"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>
+                                  Nr lokalu <span className="text-muted-foreground">(opcjonalnie)</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="5" 
+                                    className="w-full" 
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatDigitsOnly(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.postalCode"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Kod pocztowy</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="00-000" 
+                                    maxLength={6}
+                                    className="w-full"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatPostalCode(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.city"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Miejscowość</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Warszawa" 
+                                    className="w-full" 
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatLettersOnly(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pola dla typu "poste restante" */}
+                    {form.watch("correspondenceAddress.type") === CorrespondenceAddressType.PosteRestante && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.postOfficePostalCode"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Kod pocztowy placówki</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="00-000" 
+                                    maxLength={6}
+                                    className="w-full"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatPostalCode(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.postOfficeName"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Nazwa placówki</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Urząd Pocztowy Warszawa 1" 
+                                    className="w-full" 
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pola dla typów "skrytka pocztowa" i "przegródka pocztowa" */}
+                    {(form.watch("correspondenceAddress.type") === CorrespondenceAddressType.PostOfficeBox ||
+                      form.watch("correspondenceAddress.type") === CorrespondenceAddressType.CompartmentBox) && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.boxNumber"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Numer skrytki/przegródki</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="123" 
+                                    className="w-full" 
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.postOfficePostalCode"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Kod pocztowy placówki</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="00-000" 
+                                    maxLength={6}
+                                    className="w-full"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatPostalCode(e.target.value)
+                                      field.onChange(formatted)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as any}
+                            name="correspondenceAddress.postOfficeName"
+                            render={({ field }) => (
+                              <FormItem className="w-full md:flex-1">
+                                <FormLabel>Nazwa placówki</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Urząd Pocztowy Warszawa 1" 
+                                    className="w-full" 
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
