@@ -99,6 +99,82 @@ const formSchema = z.object({
     .string()
     .min(1, "Miejsce urodzenia jest wymagane")
     .regex(/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/, "Miejsce urodzenia może zawierać tylko litery"),
+  lastResidenceAddress: z
+    .object({
+      street: z.string().optional(),
+      houseNumber: z.string().optional(),
+      apartmentNumber: z.string().optional(),
+      postalCode: z.string().optional(),
+      city: z.string().optional(),
+    })
+    .optional()
+    .superRefine((data, ctx) => {
+      // Jeśli obiekt nie istnieje, nie waliduj
+      if (!data) return
+
+      const hasAnyField = 
+        (data.street && data.street.trim()) ||
+        (data.houseNumber && data.houseNumber.trim()) ||
+        (data.apartmentNumber && data.apartmentNumber.trim()) ||
+        (data.postalCode && data.postalCode.trim()) ||
+        (data.city && data.city.trim())
+
+      // Jeśli wszystkie pola są puste, nie waliduj
+      if (!hasAnyField) return
+
+      // Jeśli jakiekolwiek pole jest wypełnione, waliduj wszystkie wymagane pola
+      if (!data.street || !data.street.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Ulica jest wymagana",
+          path: ["street"],
+        })
+      }
+
+      if (!data.houseNumber || !data.houseNumber.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Numer domu jest wymagany",
+          path: ["houseNumber"],
+        })
+      } else if (!/^\d+$/.test(data.houseNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Numer domu może zawierać tylko cyfry",
+          path: ["houseNumber"],
+        })
+      }
+
+      if (data.apartmentNumber && data.apartmentNumber.trim() && !/^\d+$/.test(data.apartmentNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Numer lokalu może zawierać tylko cyfry",
+          path: ["apartmentNumber"],
+        })
+      }
+
+      if (!data.postalCode || !data.postalCode.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Kod pocztowy jest wymagany",
+          path: ["postalCode"],
+        })
+      }
+
+      if (!data.city || !data.city.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Miejscowość jest wymagana",
+          path: ["city"],
+        })
+      } else if (!/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(data.city)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Miejscowość może zawierać tylko litery",
+          path: ["city"],
+        })
+      }
+    }),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -170,6 +246,13 @@ export function VictimPersonalDataForm({
       },
       phoneNumber: defaultValues?.phoneNumber || "",
       placeOfBirth: defaultValues?.placeOfBirth || "",
+      lastResidenceAddress: defaultValues?.lastResidenceAddress || {
+        street: "",
+        houseNumber: "",
+        apartmentNumber: "",
+        postalCode: "",
+        city: "",
+      },
     },
   })
 
@@ -197,6 +280,22 @@ export function VictimPersonalDataForm({
       },
       ...(values.phoneNumber && values.phoneNumber.trim() && { phoneNumber: values.phoneNumber }),
       placeOfBirth: values.placeOfBirth,
+      ...(values.lastResidenceAddress && 
+        (values.lastResidenceAddress.street?.trim() || 
+         values.lastResidenceAddress.houseNumber?.trim() || 
+         values.lastResidenceAddress.apartmentNumber?.trim() || 
+         values.lastResidenceAddress.postalCode?.trim() || 
+         values.lastResidenceAddress.city?.trim()) && {
+        lastResidenceAddress: {
+          street: values.lastResidenceAddress.street!,
+          houseNumber: values.lastResidenceAddress.houseNumber!,
+          postalCode: values.lastResidenceAddress.postalCode!,
+          city: values.lastResidenceAddress.city!,
+          ...(values.lastResidenceAddress.apartmentNumber && values.lastResidenceAddress.apartmentNumber.trim() && {
+            apartmentNumber: values.lastResidenceAddress.apartmentNumber,
+          }),
+        },
+      }),
     }
     onSubmit(data)
   }
@@ -335,7 +434,7 @@ export function VictimPersonalDataForm({
               </div>
 
               {/* Data urodzenia i Miejsce urodzenia */}
-              <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="flex flex-col md:flex-row gap-6 items-start mt-6">
                 <FormField
                   control={form.control}
                   name="dateOfBirth"
@@ -571,6 +670,124 @@ export function VictimPersonalDataForm({
                       </FormItem>
                     )}
                   />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-6">
+              {/* Adres ostatniego miejsca zamieszkania w Polsce / adres miejsca pobytu */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Adres ostatniego miejsca zamieszkania w Polsce / adres miejsca pobytu</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Jeżeli nie masz adresu zamieszkania, podaj adres miejsca pobytu lub adres ostatniego miejsca zamieszkania w Polsce
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-6 items-start">
+                    <FormField
+                      control={form.control}
+                      name="lastResidenceAddress.street"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:flex-[2]">
+                          <FormLabel>Ulica</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ul. Przykładowa" className="w-full" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastResidenceAddress.houseNumber"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:flex-1">
+                          <FormLabel>Nr domu</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="12" 
+                              className="w-full" 
+                              {...field}
+                              onChange={(e) => {
+                                const formatted = formatDigitsOnly(e.target.value)
+                                field.onChange(formatted)
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastResidenceAddress.apartmentNumber"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:flex-1">
+                          <FormLabel>
+                            Nr lokalu <span className="text-muted-foreground">(opcjonalnie)</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="5" 
+                              className="w-full" 
+                              {...field}
+                              onChange={(e) => {
+                                const formatted = formatDigitsOnly(e.target.value)
+                                field.onChange(formatted)
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-6 items-start">
+                    <FormField
+                      control={form.control}
+                      name="lastResidenceAddress.postalCode"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:flex-1">
+                          <FormLabel>Kod pocztowy</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="00-000" 
+                              maxLength={6}
+                              className="w-full"
+                              {...field}
+                              onChange={(e) => {
+                                const formatted = formatPostalCode(e.target.value)
+                                field.onChange(formatted)
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastResidenceAddress.city"
+                      render={({ field }) => (
+                        <FormItem className="w-full md:flex-1">
+                          <FormLabel>Miejscowość</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Warszawa" 
+                              className="w-full" 
+                              {...field}
+                              onChange={(e) => {
+                                const formatted = formatLettersOnly(e.target.value)
+                                field.onChange(formatted)
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
