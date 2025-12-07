@@ -69,9 +69,9 @@ export function AccidentReportPDF({ formData }: AccidentReportPDFProps) {
 
       {/* Sekcja 1: Dane osoby poszkodowanej */}
       {victimData && (
-        <div style={{ marginBottom: '25px', border: '1px solid #ddd', padding: '15px' }}>
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '2px solid #000000', paddingBottom: '5px', color: '#000000' }}>
-            1. DANE OSOBY POSZKODOWANEJ
+        <div style={{ marginBottom: '25px', padding: '15px' }}>
+          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '1px solid #000000', paddingBottom: '5px', color: '#000000' }}>
+            DANE OSOBY POSZKODOWANEJ
           </h2>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
@@ -82,10 +82,12 @@ export function AccidentReportPDF({ formData }: AccidentReportPDFProps) {
                   <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>{victimData.pesel}</td>
                 </tr>
               )}
-              {victimData.dateOfBirth && (
+                 {victimData.identityDocument && (
                 <tr>
-                  <td style={{ padding: '5px', fontWeight: 'bold' }}>Data urodzenia:</td>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>{formatDate(victimData.dateOfBirth)}</td>
+                  <td style={{ padding: '5px', fontWeight: 'bold' }}>Rodzaj, seria i numer dokumentu tożsamości:</td>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>
+                    {formatDocumentType(victimData.identityDocument.type)} {victimData.identityDocument.number}
+                  </td>
                 </tr>
               )}
               {victimData.firstName && (
@@ -100,18 +102,16 @@ export function AccidentReportPDF({ formData }: AccidentReportPDFProps) {
                   <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>{victimData.lastName}</td>
                 </tr>
               )}
+                {victimData.dateOfBirth && (
+                <tr>
+                  <td style={{ padding: '5px', fontWeight: 'bold' }}>Data urodzenia:</td>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>{formatDate(victimData.dateOfBirth)}</td>
+                </tr>
+              )}
               {victimData.placeOfBirth && (
                 <tr>
                   <td style={{ padding: '5px', fontWeight: 'bold' }}>Miejsce urodzenia:</td>
                   <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>{victimData.placeOfBirth}</td>
-                </tr>
-              )}
-              {victimData.identityDocument && (
-                <tr>
-                  <td style={{ padding: '5px', fontWeight: 'bold' }}>Dokument tożsamości:</td>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #000000', color: '#000000' }}>
-                    {formatDocumentType(victimData.identityDocument.type)} {victimData.identityDocument.number}
-                  </td>
                 </tr>
               )}
               {victimData.phoneNumber && (
@@ -146,9 +146,9 @@ export function AccidentReportPDF({ formData }: AccidentReportPDFProps) {
        applicantData.firstName && 
        applicantData.lastName &&
        (applicantData.firstName !== victimData?.firstName || applicantData.lastName !== victimData?.lastName) && (
-        <div style={{ marginBottom: '25px', border: '1px solid #ddd', padding: '15px' }}>
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '2px solid #000000', paddingBottom: '5px', color: '#000000' }}>
-            2. DANE OSOBY ZGŁASZAJĄCEJ
+        <div style={{ marginBottom: '25px', padding: '15px' }}>
+          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '1px solid #000000', paddingBottom: '5px', color: '#000000' }}>
+            DANE OSOBY ZGŁASZAJĄCEJ
           </h2>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
@@ -186,9 +186,9 @@ export function AccidentReportPDF({ formData }: AccidentReportPDFProps) {
 
       {/* Sekcja 3: Opis wypadku */}
       {accidentDetailsData && (
-        <div style={{ marginBottom: '25px', border: '1px solid #ddd', padding: '15px' }}>
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '2px solid #000000', paddingBottom: '5px', color: '#000000' }}>
-            3. OPIS WYPADKU
+        <div style={{ marginBottom: '25px', padding: '15px' }}>
+          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '1px solid #000000', paddingBottom: '5px', color: '#000000' }}>
+            OPIS WYPADKU
           </h2>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
