@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { VictimPersonalDataForm } from '../VictimPersonalDataForm'
 import { ApplicantDataForm } from '../ApplicantDataForm'
+import { AccidentDetailsForm } from '../AccidentDetailsForm'
 import { StepIndicator } from '../StepIndicator'
 import type { VictimPersonalData } from '@/types/victim-personal-data'
 import type { ApplicantData } from '@/types/applicant-data'
+import type { AccidentDetailsData } from '@/types/accident-details-data'
 
 const steps = [
   { number: 1, label: 'Dane osoby poszkodowanej' },
@@ -15,6 +17,7 @@ export function FormLayout() {
   const [currentStep, setCurrentStep] = useState(1)
   const [victimData, setVictimData] = useState<VictimPersonalData | null>(null)
   const [applicantData, setApplicantData] = useState<ApplicantData | null>(null)
+  const [accidentDetailsData, setAccidentDetailsData] = useState<AccidentDetailsData | null>(null)
 
   const handleVictimDataSubmit = (data: VictimPersonalData) => {
     console.log('Victim data:', data)
@@ -30,6 +33,12 @@ export function FormLayout() {
 
   const handleApplicantDataSkip = () => {
     setCurrentStep(3)
+  }
+
+  const handleAccidentDetailsSubmit = (data: AccidentDetailsData) => {
+    console.log('Accident details data:', data)
+    setAccidentDetailsData(data)
+    // Tutaj można dodać logikę zapisu wszystkich danych lub przejścia do następnego kroku
   }
 
   const handleStepClick = (step: number) => {
@@ -64,14 +73,10 @@ export function FormLayout() {
       )}
       
       {currentStep === 3 && (
-        <div className="w-full max-w-4xl mx-auto">
-          <div className="p-6 border rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Opis wypadku</h2>
-            <p className="text-muted-foreground">
-              Formularz opisu wypadku będzie tutaj
-            </p>
-          </div>
-        </div>
+        <AccidentDetailsForm
+          onSubmit={handleAccidentDetailsSubmit}
+          defaultValues={accidentDetailsData || undefined}
+        />
       )}
     </div>
   )
