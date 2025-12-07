@@ -3,9 +3,11 @@ import { VictimPersonalDataForm } from '../VictimPersonalDataForm'
 import { ApplicantDataForm } from '../ApplicantDataForm'
 import { AccidentDetailsForm } from '../AccidentDetailsForm'
 import { StepIndicator } from '../StepIndicator'
+import { DownloadPDFButton } from '../DownloadPDFButton'
 import type { VictimPersonalData } from '@/types/victim-personal-data'
 import type { ApplicantData } from '@/types/applicant-data'
 import type { AccidentDetailsData } from '@/types/accident-details-data'
+import type { CompleteFormData } from '@/types/form-data'
 
 const steps = [
   { number: 1, label: 'Dane osoby poszkodowanej' },
@@ -47,6 +49,12 @@ export function FormLayout() {
     }
   }
 
+  const completeFormData: CompleteFormData = {
+    victimData,
+    applicantData,
+    accidentDetailsData,
+  }
+
   return (
     <div className="w-full space-y-6">
       <StepIndicator
@@ -72,10 +80,15 @@ export function FormLayout() {
       )}
       
       {currentStep === 3 && (
-        <AccidentDetailsForm
-          onSubmit={handleAccidentDetailsSubmit}
-          defaultValues={accidentDetailsData || undefined}
-        />
+        <>
+          <AccidentDetailsForm
+            onSubmit={handleAccidentDetailsSubmit}
+            defaultValues={accidentDetailsData || undefined}
+          />
+          <div className="flex justify-center mt-6">
+            <DownloadPDFButton formData={completeFormData} />
+          </div>
+        </>
       )}
     </div>
   )
