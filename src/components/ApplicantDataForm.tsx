@@ -35,10 +35,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { VictimPersonalData } from "@/types/victim-personal-data"
+import type { ApplicantData } from "@/types/applicant-data"
 import { IdentityDocumentType, type IdentityDocumentType as IdentityDocumentTypeType } from "@/types/identity-document"
 import { CorrespondenceAddressType, type CorrespondenceAddress } from "@/types/address"
 import { Checkbox } from "@/components/ui/checkbox"
+import type { VictimPersonalData } from "@/types/victim-personal-data"
 
 const createFormSchema = (hasDifferentCorrespondenceAddress: boolean) => z.object({
   pesel: z
@@ -284,183 +285,15 @@ const createFormSchema = (hasDifferentCorrespondenceAddress: boolean) => z.objec
         }
       }
     }),
-  businessAddress: z
-    .object({
-      address: z.object({
-        street: z.string().optional(),
-        houseNumber: z.string().optional(),
-        apartmentNumber: z.string().optional(),
-        postalCode: z.string().optional(),
-        city: z.string().optional(),
-      }),
-      phoneNumber: z
-        .string()
-        .optional()
-        .refine((val) => !val || /^\d+$/.test(val), {
-          message: "Numer telefonu może zawierać tylko cyfry",
-        }),
-    })
-    .optional()
-    .superRefine((data, ctx) => {
-      // Jeśli obiekt nie istnieje, nie waliduj
-      if (!data) return
-
-      const hasAnyField = 
-        (data.address.street && data.address.street.trim()) ||
-        (data.address.houseNumber && data.address.houseNumber.trim()) ||
-        (data.address.apartmentNumber && data.address.apartmentNumber.trim()) ||
-        (data.address.postalCode && data.address.postalCode.trim()) ||
-        (data.address.city && data.address.city.trim()) ||
-        (data.phoneNumber && data.phoneNumber.trim())
-
-      // Jeśli wszystkie pola są puste, nie waliduj
-      if (!hasAnyField) return
-
-      // Jeśli jakiekolwiek pole jest wypełnione, waliduj wszystkie wymagane pola
-      if (!data.address.street || !data.address.street.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Ulica jest wymagana",
-          path: ["address", "street"],
-        })
-      }
-
-      if (!data.address.houseNumber || !data.address.houseNumber.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer domu jest wymagany",
-          path: ["address", "houseNumber"],
-        })
-      } else if (!/^\d+$/.test(data.address.houseNumber)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer domu może zawierać tylko cyfry",
-          path: ["address", "houseNumber"],
-        })
-      }
-
-      if (data.address.apartmentNumber && data.address.apartmentNumber.trim() && !/^\d+$/.test(data.address.apartmentNumber)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer lokalu może zawierać tylko cyfry",
-          path: ["address", "apartmentNumber"],
-        })
-      }
-
-      if (!data.address.postalCode || !data.address.postalCode.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Kod pocztowy jest wymagany",
-          path: ["address", "postalCode"],
-        })
-      }
-
-      if (!data.address.city || !data.address.city.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Miejscowość jest wymagana",
-          path: ["address", "city"],
-        })
-      } else if (!/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(data.address.city)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Miejscowość może zawierać tylko litery",
-          path: ["address", "city"],
-        })
-      }
-    }),
-  childcareAddress: z
-    .object({
-      address: z.object({
-        street: z.string().optional(),
-        houseNumber: z.string().optional(),
-        apartmentNumber: z.string().optional(),
-        postalCode: z.string().optional(),
-        city: z.string().optional(),
-      }),
-      phoneNumber: z
-        .string()
-        .optional()
-        .refine((val) => !val || /^\d+$/.test(val), {
-          message: "Numer telefonu może zawierać tylko cyfry",
-        }),
-    })
-    .optional()
-    .superRefine((data, ctx) => {
-      // Jeśli obiekt nie istnieje, nie waliduj
-      if (!data) return
-
-      const hasAnyField = 
-        (data.address.street && data.address.street.trim()) ||
-        (data.address.houseNumber && data.address.houseNumber.trim()) ||
-        (data.address.apartmentNumber && data.address.apartmentNumber.trim()) ||
-        (data.address.postalCode && data.address.postalCode.trim()) ||
-        (data.address.city && data.address.city.trim()) ||
-        (data.phoneNumber && data.phoneNumber.trim())
-
-      // Jeśli wszystkie pola są puste, nie waliduj
-      if (!hasAnyField) return
-
-      // Jeśli jakiekolwiek pole jest wypełnione, waliduj wszystkie wymagane pola
-      if (!data.address.street || !data.address.street.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Ulica jest wymagana",
-          path: ["address", "street"],
-        })
-      }
-
-      if (!data.address.houseNumber || !data.address.houseNumber.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer domu jest wymagany",
-          path: ["address", "houseNumber"],
-        })
-      } else if (!/^\d+$/.test(data.address.houseNumber)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer domu może zawierać tylko cyfry",
-          path: ["address", "houseNumber"],
-        })
-      }
-
-      if (data.address.apartmentNumber && data.address.apartmentNumber.trim() && !/^\d+$/.test(data.address.apartmentNumber)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Numer lokalu może zawierać tylko cyfry",
-          path: ["address", "apartmentNumber"],
-        })
-      }
-
-      if (!data.address.postalCode || !data.address.postalCode.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Kod pocztowy jest wymagany",
-          path: ["address", "postalCode"],
-        })
-      }
-
-      if (!data.address.city || !data.address.city.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Miejscowość jest wymagana",
-          path: ["address", "city"],
-        })
-      } else if (!/^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]+$/.test(data.address.city)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Miejscowość może zawierać tylko litery",
-          path: ["address", "city"],
-        })
-      }
-    }),
 })
 
 type FormValues = z.infer<ReturnType<typeof createFormSchema>>
 
-interface VictimPersonalDataFormProps {
-  onSubmit: (data: VictimPersonalData) => void
-  defaultValues?: Partial<VictimPersonalData>
+interface ApplicantDataFormProps {
+  onSubmit: (data: ApplicantData) => void
+  defaultValues?: Partial<ApplicantData>
+  victimData?: VictimPersonalData
+  onSkip?: () => void
 }
 
 // Funkcja formatująca kod pocztowy do formatu xx-xxx
@@ -499,11 +332,16 @@ function formatLettersOnly(value: string): string {
   return value.replace(/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s-]/g, "")
 }
 
-export function VictimPersonalDataForm({
+export function ApplicantDataForm({
   onSubmit,
   defaultValues,
-}: VictimPersonalDataFormProps) {
+  victimData,
+  onSkip,
+}: ApplicantDataFormProps) {
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [hasDifferentData, setHasDifferentData] = useState(
+    !victimData || !!defaultValues?.firstName || !!defaultValues?.lastName
+  )
   const [hasDifferentCorrespondenceAddress, setHasDifferentCorrespondenceAddress] = useState(
     !!defaultValues?.correspondenceAddress
   )
@@ -549,26 +387,6 @@ export function VictimPersonalDataForm({
         postOfficeName: "",
         boxNumber: "",
       },
-      businessAddress: defaultValues?.businessAddress || {
-        address: {
-          street: "",
-          houseNumber: "",
-          apartmentNumber: "",
-          postalCode: "",
-          city: "",
-        },
-        phoneNumber: "",
-      },
-      childcareAddress: defaultValues?.childcareAddress || {
-        address: {
-          street: "",
-          houseNumber: "",
-          apartmentNumber: "",
-          postalCode: "",
-          city: "",
-        },
-        phoneNumber: "",
-      },
     },
   })
 
@@ -582,7 +400,7 @@ export function VictimPersonalDataForm({
   }, [hasDifferentCorrespondenceAddress, formSchema, form])
 
   function handleSubmit(values: FormValues) {
-    const data: VictimPersonalData = {
+    const data: ApplicantData = {
       pesel: values.pesel,
       dateOfBirth: values.dateOfBirth,
       identityDocument: {
@@ -649,71 +467,69 @@ export function VictimPersonalDataForm({
           return base
         })(),
       }),
-      ...(values.businessAddress && 
-        (values.businessAddress.address.street?.trim() || 
-         values.businessAddress.address.houseNumber?.trim() || 
-         values.businessAddress.address.apartmentNumber?.trim() || 
-         values.businessAddress.address.postalCode?.trim() || 
-         values.businessAddress.address.city?.trim() ||
-         values.businessAddress.phoneNumber?.trim()) && {
-        businessAddress: {
-          address: {
-            street: values.businessAddress.address.street!,
-            houseNumber: values.businessAddress.address.houseNumber!,
-            postalCode: values.businessAddress.address.postalCode!,
-            city: values.businessAddress.address.city!,
-            ...(values.businessAddress.address.apartmentNumber && values.businessAddress.address.apartmentNumber.trim() && {
-              apartmentNumber: values.businessAddress.address.apartmentNumber,
-            }),
-          },
-          ...(values.businessAddress.phoneNumber && values.businessAddress.phoneNumber.trim() && {
-            phoneNumber: values.businessAddress.phoneNumber,
-          }),
-        },
-      }),
-      ...(values.childcareAddress && 
-        (values.childcareAddress.address.street?.trim() || 
-         values.childcareAddress.address.houseNumber?.trim() || 
-         values.childcareAddress.address.apartmentNumber?.trim() || 
-         values.childcareAddress.address.postalCode?.trim() || 
-         values.childcareAddress.address.city?.trim() ||
-         values.childcareAddress.phoneNumber?.trim()) && {
-        childcareAddress: {
-          address: {
-            street: values.childcareAddress.address.street!,
-            houseNumber: values.childcareAddress.address.houseNumber!,
-            postalCode: values.childcareAddress.address.postalCode!,
-            city: values.childcareAddress.address.city!,
-            ...(values.childcareAddress.address.apartmentNumber && values.childcareAddress.address.apartmentNumber.trim() && {
-              apartmentNumber: values.childcareAddress.address.apartmentNumber,
-            }),
-          },
-          ...(values.childcareAddress.phoneNumber && values.childcareAddress.phoneNumber.trim() && {
-            phoneNumber: values.childcareAddress.phoneNumber,
-          }),
-        },
-      }),
     }
     onSubmit(data)
+  }
+
+  const handleSkip = () => {
+    if (onSkip) {
+      onSkip()
+    }
   }
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Dane osoby poszkodowanej</CardTitle>
+        <CardTitle>Dane osoby, która zawiadamia o wypadku</CardTitle>
         <CardDescription>
-          Wypełnij formularz danymi osoby poszkodowanej
+          Wypełnij jeśli wypełniasz formularz za osobę poszkodowaną. Jeśli jestes osobą poszkodowaną możesz przejść do kolejnego kroku.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="mb-6 pb-6 border-b">
+          <div className="flex flex-row items-start space-x-3 space-y-0">
+            <Checkbox
+              checked={hasDifferentData}
+              onCheckedChange={(checked) => {
+                setHasDifferentData(checked === true)
+              }}
+            />
+            <div className="space-y-1 leading-none">
+              <label
+                htmlFor="different-data-checkbox"
+                className="text-sm font-medium leading-none cursor-pointer"
+                onClick={() => {
+                  setHasDifferentData(!hasDifferentData)
+                }}
+              >
+                Dane osoby zgłaszającej są inne niż dane osoby poszkodowanej
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {!hasDifferentData && (
+          <div className="flex justify-end pt-4">
+            <Button
+              type="button"
+              size="lg"
+              className="w-full sm:w-auto min-w-[120px]"
+              onClick={handleSkip}
+            >
+              Dalej
+            </Button>
+          </div>
+        )}
+
+        {hasDifferentData && (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
             {/* Dane podstawowe */}
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold mb-1">Dane osobowe</h3>
                 <p className="text-sm text-muted-foreground">
-                  Podstawowe informacje o osobie poszkodowanej
+                  Podstawowe informacje o osobie zgłaszającej
                 </p>
               </div>
               
@@ -936,7 +752,7 @@ export function VictimPersonalDataForm({
                 <div>
                   <h3 className="text-lg font-semibold mb-1">Adres zamieszkania</h3>
                   <p className="text-sm text-muted-foreground">
-                    Pełny adres osoby poszkodowanej
+                    Pełny adres osoby zgłaszającej
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1192,7 +1008,7 @@ export function VictimPersonalDataForm({
             <div className="border-t border-border pt-6">
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold mb-1">Adres do korespondencji osoby poszkodowanej</h3>
+                  <h3 className="text-lg font-semibold mb-1">Adres do korespondencji osoby zgłaszającej</h3>
                   <div className="flex flex-row items-start space-x-3 space-y-0 mt-2">
                     <Checkbox
                       checked={hasDifferentCorrespondenceAddress}
@@ -1468,299 +1284,14 @@ export function VictimPersonalDataForm({
               </div>
             </div>
 
-            <div className="border-t border-border pt-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">Adres miejsca prowadzenia pozarolniczej działalności</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Podaj jeśli poszkodowany prowadzi pozarolniczą działalność albo współpracuje przy prowadzeniu takiej działalności
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.address.street"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-[2]">
-                          <FormLabel>Ulica</FormLabel>
-                          <FormControl>
-                            <Input placeholder="ul. Przykładowa" className="w-full" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.address.houseNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Nr domu</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="12" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.address.apartmentNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>
-                            Nr lokalu <span className="text-muted-foreground">(opcjonalnie)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.address.postalCode"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Kod pocztowy</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="00-000" 
-                              maxLength={6}
-                              className="w-full"
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatPostalCode(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.address.city"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Miejscowość</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Warszawa" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatLettersOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="businessAddress.phoneNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:w-[calc(50%-12px)]">
-                          <FormLabel>
-                            Numer telefonu <span className="text-muted-foreground">(opcjonalnie)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="tel"
-                              placeholder="+48 123 456 789"
-                              className="w-full"
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">Adres sprawowania opieki nad dzieckiem do lat 3</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Podaj, jeśli poszkodowany wykonuje pracę na podstawie umowy uaktywniającej (jako niania)
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.address.street"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-[2]">
-                          <FormLabel>Ulica</FormLabel>
-                          <FormControl>
-                            <Input placeholder="ul. Przykładowa" className="w-full" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.address.houseNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Nr domu</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="12" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.address.apartmentNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>
-                            Nr lokalu <span className="text-muted-foreground">(opcjonalnie)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="5" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.address.postalCode"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Kod pocztowy</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="00-000" 
-                              maxLength={6}
-                              className="w-full"
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatPostalCode(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.address.city"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:flex-1">
-                          <FormLabel>Miejscowość</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Warszawa" 
-                              className="w-full" 
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatLettersOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <FormField
-                      control={form.control as any}
-                      name="childcareAddress.phoneNumber"
-                      render={({ field }) => (
-                        <FormItem className="w-full md:w-[calc(50%-12px)]">
-                          <FormLabel>
-                            Numer telefonu <span className="text-muted-foreground">(opcjonalnie)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="tel"
-                              placeholder="+48 123 456 789"
-                              className="w-full"
-                              {...field}
-                              onChange={(e) => {
-                                const formatted = formatDigitsOnly(e.target.value)
-                                field.onChange(formatted)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="flex justify-end pt-4">
               <Button type="submit" size="lg" className="w-full sm:w-auto min-w-[120px]">
-                Dalej
+              Dalej
               </Button>
             </div>
           </form>
         </Form>
+        )}
       </CardContent>
     </Card>
   )
