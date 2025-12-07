@@ -44,7 +44,7 @@ const formSchema = z.object({
   medicalFacilityAddress: z.string().optional(),
   investigationAuthorityName: z.string().optional(),
   investigationAuthorityAddress: z.string().optional(),
-  occurredDuringMachineOperation: z.boolean().default(false),
+  occurredDuringMachineOperation: z.boolean(),
   machineWasOperational: z.boolean().optional(),
   usedAccordingToManufacturerRules: z.boolean().optional(),
   machineOperationDescription: z.string().optional(),

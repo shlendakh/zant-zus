@@ -42,7 +42,6 @@ export function FormLayout() {
   }
 
   const handleStepClick = (step: number) => {
-    // Można przejść tylko do wcześniejszych etapów lub aktualnego
     if (step <= currentStep) {
       setCurrentStep(step)
     }
